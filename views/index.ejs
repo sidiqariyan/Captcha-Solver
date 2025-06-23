@@ -1,0 +1,434 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>reCAPTCHA Educational Demo</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .demo-section {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .v2-section {
+            border-color: #4285f4;
+        }
+        .v3-section {
+            border-color: #34a853;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        .disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .explanation {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .score-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .score-high { background-color: #d4edda; color: #155724; }
+        .score-medium { background-color: #fff3cd; color: #856404; }
+        .score-low { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ reCAPTCHA Educational Demo</h1>
+        <p>This demonstration shows how reCAPTCHA v2 and v3 work in practice. Learn about the integration, verification process, and security mechanisms.</p>
+        
+        <div class="explanation">
+            <h3>📚 Educational Purpose</h3>
+            <p>This demo illustrates:</p>
+            <ul>
+                <li>How to properly integrate reCAPTCHA into web applications</li>
+                <li>The difference between v2 (interactive) and v3 (invisible) versions</li>
+                <li>How server-side verification works</li>
+                <li>Security considerations and best practices</li>
+            </ul>
+        </div>
+
+        <!-- reCAPTCHA v2 Demo -->
+        <div class="demo-section v2-section">
+            <h2>🔐 reCAPTCHA v2 Demo (Interactive)</h2>
+            <p>reCAPTCHA v2 requires user interaction. Click the checkbox below:</p>
+            
+            <form id="v2-form">
+                <div class="g-recaptcha" data-sitekey="<%= recaptchaV2SiteKey %>"></div>
+                <br>
+                <button type="submit">Verify reCAPTCHA v2</button>
+                <button type="button" onclick="resetV2()">Reset</button>
+            </form>
+
+            <div id="v2-result" class="result"></div>
+
+            <div class="explanation">
+                <h4>How v2 Works:</h4>
+                <ol>
+                    <li>User clicks "I'm not a robot" checkbox</li>
+                    <li>Google analyzes user behavior (mouse movements, timing, etc.)</li>
+                    <li>If behavior seems suspicious, an image challenge appears</li>
+                    <li>User solves the challenge if presented</li>
+                    <li>A token is generated and sent to the server for verification</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- reCAPTCHA v3 Demo -->
+        <div class="demo-section v3-section">
+            <h2>👻 reCAPTCHA v3 Demo (Invisible)</h2>
+            <p>reCAPTCHA v3 runs invisibly and provides a score (0.0 = bot, 1.0 = human):</p>
+            
+            <form id="v3-form">
+                <input type="text" placeholder="Enter some text..." id="v3-input" style="padding: 10px; width: 300px; margin: 10px 0;">
+                <br>
+                <button type="submit">Submit with reCAPTCHA v3</button>
+                <button type="button" onclick="checkScore()">Check Current Score</button>
+            </form>
+
+            <div id="v3-result" class="result"></div>
+
+            <div class="explanation">
+                <h4>How v3 Works:</h4>
+                <ol>
+                    <li>JavaScript runs continuously in the background</li>
+                    <li>Google analyzes user behavior patterns</li>
+                    <li>A score (0.0-1.0) is calculated based on the analysis</li>
+                    <li>The score is sent to your server with each form submission</li>
+                    <li>Your server decides what action to take based on the score</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div class="demo-section">
+            <h2>📊 Live Analysis</h2>
+            <button onclick="showAnalytics()">Show How reCAPTCHA Works</button>
+            <button onclick="simulateBot()">Simulate Bot Behavior (Educational)</button>
+            <div id="analytics-result" class="result"></div>
+        </div>
+
+        <!-- Links -->
+        <div class="demo-section">
+            <h2>🔗 Additional Resources</h2>
+            <button onclick="window.open('/how-it-works', '_blank')">Detailed Technical Explanation</button>
+            <button onclick="window.open('https://developers.google.com/recaptcha', '_blank')">Official Documentation</button>
+        </div>
+    </div>
+
+    <script>
+        // reCAPTCHA v3 site key
+        const RECAPTCHA_V3_SITE_KEY = '6LducGorAAAAAE3AKYnFanMGEqlIXu73jc6GS6Vw';
+
+        // Initialize reCAPTCHA v3
+        grecaptcha.ready(function() {
+            console.log('reCAPTCHA v3 initialized');
+        });
+
+        // Handle v2 form submission
+        document.getElementById('v2-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                showResult('v2-result', 'error', 'Please complete the reCAPTCHA challenge');
+                return;
+            }
+
+            showResult('v2-result', 'info', 'Verifying reCAPTCHA v2...');
+
+            try {
+                const response = await fetch('/verify-v2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `g-recaptcha-response=${recaptchaResponse}`
+                });
+
+                const result = await response.json();
+                displayV2Result(result);
+            } catch (error) {
+                showResult('v2-result', 'error', 'Network error occurred');
+            }
+        });
+
+        // Handle v3 form submission
+        document.getElementById('v3-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            showResult('v3-result', 'info', 'Generating reCAPTCHA v3 token...');
+
+            try {
+                const token = await grecaptcha.execute(RECAPTCHA_V3_SITE_KEY, {
+                    action: 'submit_form'
+                });
+
+                showResult('v3-result', 'info', 'Verifying reCAPTCHA v3 token...');
+
+                const response = await fetch('/verify-v3', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        action: 'submit_form'
+                    })
+                });
+
+                const result = await response.json();
+                displayV3Result(result);
+            } catch (error) {
+                showResult('v3-result', 'error', 'Error generating or verifying token');
+            }
+        });
+
+        // Check current reCAPTCHA v3 score
+        async function checkScore() {
+            showResult('v3-result', 'info', 'Checking current reCAPTCHA v3 score...');
+
+            try {
+                const token = await grecaptcha.execute(RECAPTCHA_V3_SITE_KEY, {
+                    action: 'check_score'
+                });
+
+                const response = await fetch('/verify-v3', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        action: 'check_score'
+                    })
+                });
+
+                const result = await response.json();
+                displayV3Result(result);
+            } catch (error) {
+                showResult('v3-result', 'error', 'Error checking score');
+            }
+        }
+
+        // Display v2 verification result
+        function displayV2Result(result) {
+            const type = result.success ? 'success' : 'error';
+            let message = `
+                <h4>reCAPTCHA v2 Verification Result:</h4>
+                <p><strong>Status:</strong> ${result.success ? '✅ Success' : '❌ Failed'}</p>
+                <p><strong>Message:</strong> ${result.details?.message || result.error}</p>
+            `;
+
+            if (result.success) {
+                message += `
+                    <p><strong>Challenge Timestamp:</strong> ${result.challenge_ts}</p>
+                    <p><strong>Hostname:</strong> ${result.hostname}</p>
+                    <p><strong>Verification Time:</strong> ${result.details?.timestamp}</p>
+                `;
+            }
+
+            if (result.errorCodes) {
+                message += `<p><strong>Error Codes:</strong> ${result.errorCodes.join(', ')}</p>`;
+            }
+
+            showResult('v2-result', type, message);
+        }
+
+        // Display v3 verification result
+        function displayV3Result(result) {
+            const type = result.success ? 'success' : 'error';
+            const scoreClass = getScoreClass(result.score);
+            
+            let message = `
+                <h4>reCAPTCHA v3 Verification Result:</h4>
+                <p><strong>Status:</strong> ${result.success ? '✅ Success' : '❌ Failed'}</p>
+                <p><strong>Score:</strong> <span class="score-indicator ${scoreClass}">${result.score}</span></p>
+                <p><strong>Action:</strong> ${result.action}</p>
+                <p><strong>Score Interpretation:</strong> ${getScoreInterpretation(result.score)}</p>
+            `;
+
+            if (result.details) {
+                message += `
+                    <p><strong>Threshold:</strong> ${result.details.scoreThreshold}</p>
+                    <p><strong>Valid Score:</strong> ${result.details.isValidScore ? '✅' : '❌'}</p>
+                    <p><strong>Valid Action:</strong> ${result.details.isValidAction ? '✅' : '❌'}</p>
+                `;
+            }
+
+            if (result.errorCodes) {
+                message += `<p><strong>Error Codes:</strong> ${result.errorCodes.join(', ')}</p>`;
+            }
+
+            showResult('v3-result', type, message);
+        }
+
+        // Get CSS class for score
+        function getScoreClass(score) {
+            if (score >= 0.7) return 'score-high';
+            if (score >= 0.3) return 'score-medium';
+            return 'score-low';
+        }
+
+        // Get human-readable score interpretation
+        function getScoreInterpretation(score) {
+            if (score >= 0.9) return 'Very likely human';
+            if (score >= 0.7) return 'Likely human';
+            if (score >= 0.5) return 'Neutral/Unclear';
+            if (score >= 0.3) return 'Likely bot';
+            return 'Very likely bot';
+        }
+
+        // Show analytics
+        async function showAnalytics() {
+            showResult('analytics-result', 'info', 'Loading reCAPTCHA analytics...');
+
+            try {
+                const response = await fetch('/api/analytics');
+                const data = await response.json();
+                
+                let message = `
+                    <h4>🔍 How reCAPTCHA Works:</h4>
+                    <div class="code-block">
+                        <h5>reCAPTCHA v2 Workflow:</h5>
+                        ${data.explanation.v2.workflow.map(step => `<p>${step}</p>`).join('')}
+                        
+                        <h5>reCAPTCHA v3 Workflow:</h5>
+                        ${data.explanation.v3.workflow.map(step => `<p>${step}</p>`).join('')}
+                        
+                        <h5>Security Features:</h5>
+                        ${data.explanation.v2.securityFeatures.map(feature => `<p>• ${feature}</p>`).join('')}
+                    </div>
+                `;
+
+                showResult('analytics-result', 'info', message);
+            } catch (error) {
+                showResult('analytics-result', 'error', 'Error loading analytics');
+            }
+        }
+
+        // Simulate bot behavior (educational)
+        function simulateBot() {
+            showResult('analytics-result', 'info', `
+                <h4>🤖 Bot Behavior Simulation (Educational)</h4>
+                <p>This demonstrates what reCAPTCHA looks for in bot behavior:</p>
+                <div class="code-block">
+                    <p><strong>Suspicious Patterns:</strong></p>
+                    <p>• Perfect mouse movements (straight lines)</p>
+                    <p>• Consistent timing between actions</p>
+                    <p>• No natural human hesitation</p>
+                    <p>• Rapid, precise clicking</p>
+                    <p>• No scrolling or natural exploration</p>
+                    <p>• Identical browser fingerprints</p>
+                    <p>• High-frequency requests from same IP</p>
+                    <br>
+                    <p><strong>Detection Methods:</strong></p>
+                    <p>• Machine learning models analyze behavior</p>
+                    <p>• Statistical analysis of interaction patterns</p>
+                    <p>• Browser environment analysis</p>
+                    <p>• Network and IP reputation checks</p>
+                </div>
+                <p><em>Note: This is for educational purposes only. Actual bot detection is much more sophisticated.</em></p>
+            `);
+        }
+
+        // Utility function to show results
+        function showResult(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.innerHTML = message;
+            element.style.display = 'block';
+        }
+
+        // Reset v2 reCAPTCHA
+        function resetV2() {
+            grecaptcha.reset();
+            document.getElementById('v2-result').style.display = 'none';
+        }
+
+        // Log interactions for educational purposes
+        document.addEventListener('click', function(e) {
+            console.log('User interaction detected:', {
+                element: e.target.tagName,
+                timestamp: Date.now(),
+                coordinates: { x: e.clientX, y: e.clientY }
+            });
+        });
+
+        // Monitor form interactions
+        document.getElementById('v3-input').addEventListener('input', function(e) {
+            console.log('Input event:', {
+                length: e.target.value.length,
+                timestamp: Date.now()
+            });
+        });
+    </script>
+</body>
+</html>
